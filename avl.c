@@ -25,40 +25,9 @@
  *
  */
 
-/*
- *  Implmentation of an AVL tree using pointers.   Nodes are allocated in blocks
- *  of 'N' (preferably adapted to page size).  Deletion only free's a node if
- *  allocation is N=1.  Deletion algorithm adapted from Knuth's art of computer
- *  programming. (pg 458, volume 3, 3rd ed.)
- *
- *  Using an allocation size of 128, pages of 4kb worth are allocated at once.
- *  Trees can have multiple searches ongoing, but any modification (insert or
- *  delete) should be exclusive.  Use external locking.
- *
- */
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-
-//#include <time.h>
 
 
-//  This maximum depth is defined to build static arrays of paths in the
-//  trees.  It is not actually a physical limit of any kind, although a tree
-//  of a depth of 64 nodes would need to be 2^(64+5) bytes just for AVL_NODEs...
-#define AVL_MAX_DEPTH 64
-
-
-//  32 bytes on a 64 bit system, 16 bytes on 32-bit system
-typedef struct AVL_NODE_S
-{
-    struct AVL_NODE_S *l, *r;   //  Left and right sub-trees
-    int8_t f;                  //  Flags:  balance, free/used, alloc (1st in sequence), free-me, and count (if 1st in sequence)
-    void *d;                    //  The user data pointer.
-}
-AVL_NODE;
+#include "avl.h"
 
 
 //  
@@ -95,49 +64,6 @@ AVL_NODE;
 
 
 
-//  Global tree structure:
-typedef struct
-{
-    //  The list of free nodes:
-    struct AVL_NODE_S *freeStack;        //  freeStack->(*n).r->(*n).r->...->NULL
-    int allocAtOnce;
-
-    //  The tree and all:
-    struct AVL_NODE_S *top;
-    int height;     //  Height to the deepest node
-    int size;       //  Number of nodes in the tree
-
-    //  The method by which *data pointers are compared
-    int (*eval)(void *d1, void *d2, void *user);
-    void *user;
-}
-AVL_TREE;
-
-
-//
-//  Example comparator method, the *data pointers are in this
-//  case assumed to be simple *int pointers.  The number returned
-//  must be negative for smaller, 0 for same (item is identical
-//  and therefore found in the tree), or positive for larger.
-//  
-//  On insert, find, delete, pointer *p is given to this evaluation
-//  method for nodes stored along the search path.  This method is
-//  also called on rebalancing, therefore all operations should use
-//  the same data structure, even if the key is only part of that
-//  data structure.
-//
-//  Search depth can be tracked as part of the 'k' pointer that
-//  is given as the seach key.  Increment on each 'eval' call.
-//
-//  The 'user' pointer is passed as-is from creation time.
-//
-int AVL_exampleEval(void *data1, void *data2, void *user)
-{
-    return((*((int*)data2))-(*((int*)data1)));
-}
-
-
-
 
 
 
@@ -154,8 +80,6 @@ int AVL_exampleEval(void *data1, void *data2, void *user)
 //  Building a binary tree requires at the very least an evaluation function
 //  that compares the data pointers of two nodes.  The 'user' point is optional
 //  in case additional data is needed in the evaluation function.
-//
-//  To use malloc/free for each node added/deleted, set 'allocAtOnce=1'
 //
 AVL_TREE *AVL_newTree(int allocAtOnce, int (*eval)(void *d1, void *d2, void *user), void *user)
 {
@@ -669,7 +593,7 @@ int AVL_insert(AVL_TREE *t, void *d)
 //  Deletion.
 //  Rebalances the tree after deleting a node.
 //  Returns:
-//    NULL - node was 
+//    NULL - node was not found in the tree.
 //    data - the data pointer originally given upon insert.
 //
 //  Notes on general algorithm:
@@ -1508,10 +1432,22 @@ void AVL_print(AVL_TREE *t, int x, int y, void (*printLabel)(FILE *stream, void 
 
 
 
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////
+//
+//  A check-balance method ought to simply return an error.  Not 'exit'.
+//
+//
+//
+
 //
 //  Recursive method to validate balances and heights
 //  Returns height of subtree it was given to.
-//  Prints error message and 'exit' on failure.
+//  Prints error message on failure.
 //
 int AVL_checkBalance(AVL_NODE *n)
 {
@@ -1519,247 +1455,19 @@ int AVL_checkBalance(AVL_NODE *n)
     if (n==NULL) return(0);
     l=AVL_checkBalance((*n).l);
     r=AVL_checkBalance((*n).r);
+    if (l==-1 || r==-1)
+        return(-1);
     b=r-l;
     a=(int)AVL_getbal((*n).f);
     if (b!=a || b<-1 || b>+1)
     {
-        //fprintf(stderr, "BALANCE ERROR:  l=%i r=%i (b=%i) f=%i\n", l, r, b, a);
         fprintf(stderr, "BALANCE ERROR on %i:  l=%i r=%i (b=%i) f=%i\n", *((int*)(*n).d), l, r, b, a);
-        exit(1);
+        return(-1);
     }
     if (b>0)
         return(r+1);
     return(l+1);
 }
-
-
-//
-//  Takes an array of 'n' integers, tries n random
-//  inserts, then runs the array and tries all of them
-//  in sequence to grab the stragglers.
-//
-int AVL_testFill(AVL_TREE *t, int *a, int n)
-{
-    int i=0;
-    int s=0;    //  Sucessful inserts
-    int f=0;    //  Failed inserts
-    int rc;
-    //  Initialize with negative numbers
-    for (i=0; i<n; i+=1)
-        a[i]=-i-1;
-    //  Initial fill:
-    for (i=0; i<n; i+=1)
-    {
-        //  Pick a random number:
-        int r=random()%n;
-
-        //  Non-inserted numbers are made negative.
-        //  Inserted ones are positive:
-        if (a[r]<0)
-        {
-            a[r]=-a[r];
-            rc=AVL_insert(t, &(a[r]));
-            if (rc!=0)
-                fprintf(stderr, "ERROR (%i): %i failed to insert, but was not yet in the tree!\n", rc, a[r]);
-            else
-                s+=1;
-        }
-        else
-        {
-            //  Already in the tree
-            rc=AVL_insert(t, &(a[r]));
-            if (rc!=1)
-                fprintf(stderr, "ERROR (%i): %i was inserted, but was already in the tree!\n", rc, a[r]);
-            else
-                f+=1;
-        }
-    }
-    s=0;
-    f=0;
-    for (i=0; i<n; i+=1)
-    {
-        //  Stragglers are inserted.
-        if (a[i]<0)
-        {
-            a[i]=-a[i];
-            rc=AVL_insert(t, &(a[i]));
-            if (rc!=0)
-                fprintf(stderr, "ERROR (%i): %i failed to insert, but was not yet in the tree!\n", rc, a[i]);
-            else
-                s+=1;
-        }
-        else
-        {
-            //  Already in the tree
-            rc=AVL_insert(t, &(a[i]));
-            if (rc!=1)
-                fprintf(stderr, "ERROR (%i): %i was inserted, but was already in the tree!\n", rc, a[i]);
-            else
-                f+=1;
-        }
-    }
-    return(0);
-}
-
-//
-//  Takes the same array of 'n' integers, tries n random
-//  deletes, then runs the array and tries all of them
-//  in sequence to grab the stragglers.  This is a heavier
-//  method, as it performs a balance check on each succesful
-//  delete from the tree
-//
-int AVL_testDrain(AVL_TREE *t, int *a, int n)
-{
-    int i=0;
-    int s=0;    //  Sucessful inserts
-    int f=0;    //  Failed inserts
-    int rc;
-    int h;
-    //  Drain some numbers:
-    for (i=0; i<n; i+=1)
-    {
-        //  Pick a random number:
-        int r=random()%n;
-
-        //  Succesfully deleted numbers are made negative.
-        if (a[r]>0)
-        {
-            if (AVL_delete(t, &(a[r]))==NULL)
-            {
-                fprintf(stderr, "ERROR: %i failed to delete, but was in the tree!\n", a[r]);
-                exit(1);
-            }
-            else
-                s+=1;
-            a[r]=-a[r];     //  Mark it negative
-            //  Check balance:
-            h=AVL_checkBalance((*t).top);
-            if (h!=(*t).height) 
-            {
-                fprintf(stderr, "Height error:  (*t).height=%i  checkbal=%i\n", (*t).height, h);
-                exit(1);
-            }
-        }
-        else
-        {
-            //  Already deleted, see if another delete attempt fails:
-            a[r]=-a[r];
-            if (AVL_delete(t, &(a[r]))!=NULL)
-            {
-                fprintf(stderr, "ERROR: %i was succesfully deleted, but was no longer in the tree!\n", a[r]);
-                exit(1);
-            }
-            else
-                f+=1;
-            a[r]=-a[r]; // Reset
-        }
-
-        //  Every so often, see if blocks can be freed:
-        if (i%(*t).allocAtOnce==0)
-            AVL_dealloc(t);
-    }
-    s=0;
-    f=0;
-    for (i=0; i<n; i+=1)
-    {
-        //  Stragglers are deleted.
-        if (a[i]>0)
-        {
-            if (AVL_delete(t, &(a[i]))==NULL)
-                fprintf(stderr, "ERROR: %i failed to delete, but was in the tree!\n", a[i]);
-            else
-                s+=1;
-            a[i]=-a[i];     //  Mark it negative
-            //  Check balance:
-            h=AVL_checkBalance((*t).top);
-            if (h!=(*t).height) 
-            {
-                fprintf(stderr, "Height error:  (*t).height=%i  checkbal=%i\n", (*t).height, h);
-                exit(1);
-            }
-        }
-        else
-        {
-            //  Already deleted, see if another delete attempt fails:
-            a[i]=-a[i];
-            if (AVL_delete(t, &(a[i]))!=NULL)
-            {
-                fprintf(stderr, "ERROR: %i was succesfully deleted, but was no longer in the tree!\n", a[i]);
-                exit(1);
-            }
-            else
-                f+=1;
-            a[i]=-a[i]; // Reset
-        }
-
-        //  Every so often, see if blocks can be freed:
-        if (i%(*t).allocAtOnce==0)
-            AVL_dealloc(t);
-    }
-    return(0);
-}
-
-
-
-
-
-//
-//  Template methods for any object where the first var
-//  is an integer which is also used as the key.
-//
-void printLabel(FILE *stream, void *d)
-{
-    fprintf(stream, "%i", *((int*)d));
-}
-
-void callback(void *d, void *user)
-{
-    int i=*((int*)d);
-    int j=*((int*)user);
-    if (i<=j)
-    {
-        fprintf(stderr, "ERROR:  non-sequential sorting order detected!  (i<=j: %i<=%i)\n", i, j);
-        exit(1);
-    }
-    *((int*)user)=i;
-    //fprintf(stderr, "%i ", i);
-}
-
-//
-//  Sample main and unit test:
-//
-#define AVL_TEST_NUM 170
-#define AVL_TEST_SIZ 170
-int main(int argc, char **argv)
-{
-    int8_t i8,j8,k8;
-    int i,j;
-    int *a;
-    long ts;
-    AVL_TREE *t=AVL_newTree(32, AVL_exampleEval, NULL);
-    a=(int*)malloc(AVL_TEST_NUM*sizeof(int));
-    int h;
-
-    for (j=1; j<AVL_TEST_SIZ; j+=1)
-    {
-        srandom(j);
-        for (i=1; i<AVL_TEST_NUM; i+=1)
-        {
-            int k=0;
-            AVL_testFill(t, a, i);
-            //AVL_print(t, 1300, 400, printLabel);
-            AVL_walk(t, callback, &k);
-            AVL_testDrain(t, a, i);
-        }
-    }
-
-    AVL_destroy(t);
-
-    free(a);
-    return(1);
-}
-
-
 
 
 
