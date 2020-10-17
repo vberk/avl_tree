@@ -1621,7 +1621,6 @@ int AVL_testDrain(AVL_TREE *t, int *a, int n)
         //  Pick a random number:
         int r=random()%n;
 
-        fprintf(stderr, "%i:\n", a[r]);
         //  Succesfully deleted numbers are made negative.
         if (a[r]>0)
         {
@@ -1715,36 +1714,44 @@ void printLabel(FILE *stream, void *d)
 
 void callback(void *d, void *user)
 {
-    fprintf(stderr, "%i ", *((int*)d));
+    int i=*((int*)d);
+    int j=*((int*)user);
+    if (i<=j)
+    {
+        fprintf(stderr, "ERROR:  non-sequential sorting order detected!  (i<=j: %i<=%i)\n", i, j);
+        exit(1);
+    }
+    *((int*)user)=i;
+    //fprintf(stderr, "%i ", i);
 }
 
 //
 //  Sample main and unit test:
 //
 #define AVL_TEST_NUM 170
+#define AVL_TEST_SIZ 170
 int main(int argc, char **argv)
 {
     int8_t i8,j8,k8;
-    int i;
+    int i,j;
     int *a;
     long ts;
     AVL_TREE *t=AVL_newTree(32, AVL_exampleEval, NULL);
     a=(int*)malloc(AVL_TEST_NUM*sizeof(int));
     int h;
 
-
-
-    for (i=1; i<AVL_TEST_NUM; i+=1)
+    for (j=1; j<AVL_TEST_SIZ; j+=1)
     {
-        AVL_testFill(t, a, i);
-        AVL_print(t, 1300, 400, printLabel);
-        AVL_walk(t, callback, NULL);
-        fprintf(stderr, "\n");
-        AVL_testDrain(t, a, i);
+        srandom(j);
+        for (i=1; i<AVL_TEST_NUM; i+=1)
+        {
+            int k=0;
+            AVL_testFill(t, a, i);
+            //AVL_print(t, 1300, 400, printLabel);
+            AVL_walk(t, callback, &k);
+            AVL_testDrain(t, a, i);
+        }
     }
-
-
-
 
     AVL_destroy(t);
 
