@@ -105,6 +105,15 @@ AVL_TREE;
 
 
 
+
+
+/************************************************************************
+ *                                                                      *
+ *   Example User Methods                                               *
+ *                                                                      *
+ ************************************************************************/
+
+
 //
 //  Example comparator method, the *data pointers are in this
 //  case assumed to be simple *int pointers.  The number returned
@@ -121,11 +130,37 @@ AVL_TREE;
 //  is given as the seach key.  Increment on each 'eval' call.
 //
 //  The 'user' pointer is passed as-is from creation time.
-//
+/*
 int AVL_exampleEval(void *data1, void *data2, void *user)
 {
     return((*((int*)data2))-(*((int*)data1)));
 }
+*/
+
+
+//
+//  For a tree where the data are simple integers, this example
+//  prints the sorted list of integers when AVL_walk is called.
+/*
+void AVL_exampleCallback(void *d, void *user)
+{
+    fprintf(stdout, "%i", *((int*)d));
+}
+*/
+
+
+//
+//  Example method for printing to a stream a label for the node.
+//  This example method assumes a simple list of integers was inserted.
+//  For use with the 'AVL_print' method.
+/*
+void AVL_examplePrintLabel(FILE *stream, void *d)
+{
+    fprintf(stream, "%i", *((int*)d));
+}
+*/
+
+
 
 
 
@@ -196,6 +231,7 @@ void AVL_destroy(AVL_TREE *t);
 //
 void *AVL_find(AVL_TREE *t, void *k);
 
+
 //
 //  Insertion of a new data element.
 //  Returns:
@@ -225,16 +261,6 @@ void *AVL_delete(AVL_TREE *t, void *k);
 
 
 //
-//  For a tree where the data are simple integers, this example
-//  prints the sorted list of integers when AVL_walk is called.
-//
-void AVL_exampleCallback(void *d, void *user)
-{
-    fprintf(stdout, "%i", *((int*)d));
-}
-
-
-//
 //  Method that walks the tree left-root-right.  (In sorted order).
 //  Callback is called for each node in the sorted order of the nodes.
 //
@@ -243,18 +269,6 @@ void AVL_exampleCallback(void *d, void *user)
 //    2) rebuilding/re-allocating
 //
 void AVL_walk(AVL_TREE *t, void (*callback)(void *d, void *user), void *user);
-
-
-
-//
-//  Example method for printing to a stream a label for the node.
-//  This example method assumes a simple list of integers was inserted.
-//  For use with the 'AVL_print' method.
-//
-void AVL_examplePrintLabel(FILE *stream, void *d)
-{
-    fprintf(stream, "%i", *((int*)d));
-}
 
 
 //  
