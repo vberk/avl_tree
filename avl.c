@@ -623,8 +623,6 @@ void *AVL_delete(AVL_TREE *t, void *k)
         return(NULL);
 
 
-//fprintf(stderr, "D:");
-
     //
     //  Record the path to the node to be deleted:
     //
@@ -662,10 +660,7 @@ void *AVL_delete(AVL_TREE *t, void *k)
 
     //  At this point, if no 'd' was found, the item is not in the tree:
     if (d==NULL)
-//{
-//fprintf(stderr, "N\n");
         return(d);
-//}
 
     //
     //  At this point, 'c' points to the node that is to be deleted.
@@ -678,21 +673,18 @@ void *AVL_delete(AVL_TREE *t, void *k)
         if (s==NULL)
             s=(*c).r;           //  Right subtree.
 
-//fprintf(stderr, "1");
         //  If there is a previous
         if (p)
         {
             //  Was 'c' the left or right child?
             if ((*p).l==c)
             {
-//fprintf(stderr, "l");
                 //  The tree is getting shorter on the left:
                 (*p).l=s;
                 AVL_incbal((*p).f);
             }
             else
             {
-//fprintf(stderr, "r");
                 //  The tree is getting shorter on the right:
                 (*p).r=s;
                 AVL_decbal((*p).f);
@@ -704,7 +696,6 @@ void *AVL_delete(AVL_TREE *t, void *k)
         }
         else
         {
-//fprintf(stderr, "t");
             //  'c' is the top
             //  Remember that the tree has become less tall, but
             //  the balance under 's' is already correct:
@@ -714,7 +705,6 @@ void *AVL_delete(AVL_TREE *t, void *k)
     }
     else
     {
-//fprintf(stderr, "2");
         //
         //  Find the in-order predecessor or successor.
         //  Make the decision based on where the balance sits, so
@@ -777,13 +767,11 @@ void *AVL_delete(AVL_TREE *t, void *k)
         //  change of being NULL, which does not matter.
         if ((*p).l==c)
         {
-//fprintf(stderr, "l");
             (*p).l=s;
             AVL_incbal((*p).f);   //  Tree under 'p' got shorter on the left
         }
         else
         {
-//fprintf(stderr, "r");
             (*p).r=s;
             AVL_decbal((*p).f);   //  Tree under 'p' got shorter on the right
         }
@@ -904,11 +892,9 @@ void *AVL_delete(AVL_TREE *t, void *k)
         else
             p=NULL;
 
-//fprintf(stderr, " B[%i]", *((int*)(*a).d));
         //  Which scenario are we in?
         if (AVL_getbal((*a).f)==2)
         {
-//fprintf(stderr, "R");
             //
             //  Heavy on the 'r' side
             //
@@ -916,7 +902,6 @@ void *AVL_delete(AVL_TREE *t, void *k)
             b=(*a).r;
             if (AVL_getbal((*b).f)>=0)
             {
-//fprintf(stderr, "b+");
                 //
                 //  Scenario 1, with the right most tree heaviest, or both
                 //  subtrees 's3' and 's4' being equal.  'c' cannot be NULL
@@ -950,7 +935,6 @@ void *AVL_delete(AVL_TREE *t, void *k)
                 //
                 if (AVL_getbal((*b).f)==0)
                 {
-//fprintf(stderr, "0");
                     //  bal(a)=+1  bal(b)=-1  bal(c)=unchanged, height(p)=unchanged (because s2 is +1 taller)
                     AVL_setbal((*a).f,+1);
                     AVL_setbal((*b).f,-1);
@@ -960,7 +944,6 @@ void *AVL_delete(AVL_TREE *t, void *k)
                 }
                 else   //  Balance under 'b' was '1'
                 {
-//fprintf(stderr, "1");
                     //  bal(a)=0  bal(b)=0  bal(c)=unchanged,  height(p)=-1
                     AVL_setbal((*a).f,0);
                     AVL_setbal((*b).f,0);
@@ -973,7 +956,6 @@ void *AVL_delete(AVL_TREE *t, void *k)
             }
             else
             {
-//fprintf(stderr, "b-");
                 //
                 //  This is scenario 2, with the left-most tree heaviest.
                 //  Both 's2' and 's3' might be NULL, 'c' cannot be NULL.
@@ -1005,21 +987,18 @@ void *AVL_delete(AVL_TREE *t, void *k)
                 //
                 if (AVL_getbal((*c).f)==-1)
                 {
-//fprintf(stderr, "c-");
                     //  bal(a)=0  bal(b)=+1  bal(c)=0,   height(p)=-1
                     AVL_setbal((*a).f,0);
                     AVL_setbal((*b).f,+1);
                 }
                 else if (AVL_getbal((*c).f)==0)
                 {
-//fprintf(stderr, "c0");
                     //  bal(a)=0  bal(b)=0  bal(c)=0,   height(p)=-1
                     AVL_setbal((*a).f,0);
                     AVL_setbal((*b).f,0);
                 }
                 else //  (AVL_getbal((*c).f)==+1)
                 {
-//fprintf(stderr, "c+");
                     //  bal(a)=-1  bal(b)=0  bal(c)=0,   height(p)=-1
                     AVL_setbal((*a).f,-1);
                     AVL_setbal((*b).f,0);
@@ -1035,7 +1014,6 @@ void *AVL_delete(AVL_TREE *t, void *k)
         }
         else if (AVL_getbal((*a).f)==-2)
         {
-//fprintf(stderr, "L");
             //
             //  Heavy on the 'l' side (symmetric to right)
             //
@@ -1043,7 +1021,6 @@ void *AVL_delete(AVL_TREE *t, void *k)
             b=(*a).l;
             if (AVL_getbal((*b).f)<=0)
             {
-//fprintf(stderr, "b-");
                 //
                 //  Scenario 1, with the left most tree heaviest, or both
                 //  subtrees 's3' and 's4' being equal.  'c' cannot be NULL
@@ -1077,7 +1054,6 @@ void *AVL_delete(AVL_TREE *t, void *k)
                 //
                 if (AVL_getbal((*b).f)==0)
                 {
-//fprintf(stderr, "0");
                     //  bal(a)=-1  bal(b)=+1  bal(c)=unchanged, height(p)=unchanged (because s2 is +1 taller)
                     AVL_setbal((*a).f,-1);
                     AVL_setbal((*b).f,+1);
@@ -1087,7 +1063,6 @@ void *AVL_delete(AVL_TREE *t, void *k)
                 }
                 else   //  Balance under 'b' was '-1'
                 {
-//fprintf(stderr, "1");
                     //  bal(a)=0  bal(b)=0  bal(c)=unchanged,  height(p)=-1
                     AVL_setbal((*a).f,0);
                     AVL_setbal((*b).f,0);
@@ -1100,7 +1075,6 @@ void *AVL_delete(AVL_TREE *t, void *k)
             }
             else
             {
-//fprintf(stderr, "b+");
                 //
                 //  This is scenario 2, with the left-most tree heaviest.
                 //  Both 's2' and 's3' might be NULL, 'c' cannot be NULL.
@@ -1132,21 +1106,18 @@ void *AVL_delete(AVL_TREE *t, void *k)
                 //
                 if (AVL_getbal((*c).f)==+1)
                 {
-//fprintf(stderr, "c+");
                     //  bal(a)=0  bal(b)=+1  bal(c)=0,   height(p)=-1
                     AVL_setbal((*a).f,0);
                     AVL_setbal((*b).f,-1);
                 }
                 else if (AVL_getbal((*c).f)==0)
                 {
-//fprintf(stderr, "c0");
                     //  bal(a)=0  bal(b)=0  bal(c)=0,   height(p)=-1
                     AVL_setbal((*a).f,0);
                     AVL_setbal((*b).f,0);
                 }
                 else //  (AVL_getbal((*c).f)==+1)
                 {
-//fprintf(stderr, "c-");
                     //  bal(a)=-1  bal(b)=0  bal(c)=0,   height(p)=-1
                     AVL_setbal((*a).f,+1);
                     AVL_setbal((*b).f,0);
@@ -1160,18 +1131,12 @@ void *AVL_delete(AVL_TREE *t, void *k)
                 a=c;
             }
         }
-
-
         //  Else, no rotations necessary.
 
 
-//
-//  Can this be a simple 'if'
-//
-
+        //  Is there still a height change?
         if (h!=0)
         {
-//fprintf(stderr, "H");
             //  We are propagating a height change on the subtree.
             //  Check the balances of the parent node 'p' and
             //  adjust accordingly.
@@ -1179,15 +1144,10 @@ void *AVL_delete(AVL_TREE *t, void *k)
             {
                 //  Note that 'a' was reset correctly if a rotation was performed.
                 if ((*p).l==a)
-//{
                     AVL_incbal((*p).f);
-//fprintf(stderr, "+");
-//}
                 else
-//{
                     AVL_decbal((*p).f);
-//fprintf(stderr, "-");
-//}
+
                 //  At this point, if bal(p) is now zero, it means that height
                 //  under 'p' was lost, otherwise, height under 'p' is dominated
                 //  by the other (non-rotated) subtree.
@@ -1200,7 +1160,6 @@ void *AVL_delete(AVL_TREE *t, void *k)
             //  handled below, and outside of this while-block.
         }
     }
-//fprintf(stderr, "\n");
 
 
     //  If we are still propagating a height after
@@ -1439,7 +1398,7 @@ void AVL_print(AVL_TREE *t, int x, int y, void (*printLabel)(FILE *stream, void 
 
 //////////////////////////////////////////////////////////////////////////////////
 //
-//  A check-balance method ought to simply return an error.  Not 'exit'.
+//  A check-balance method simply returns an error.
 //
 //
 //
